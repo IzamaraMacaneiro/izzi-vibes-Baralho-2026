@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IZZI VIBES · Baralho de Afirmações Positivas</title>
+<meta name="theme-color" content="#1d0f2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="IZZI VIBES">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{--bg:#1d0f2e;--accent:#7f9cff;--cream:#f7efe1;--muted:#b9a9cc}
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:radial-gradient(circle at 50% 0%,#3b1f5c 0%,var(--bg) 62%) fixed;
+    color:var(--cream);min-height:100vh;display:flex;flex-direction:column;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0);
+    -webkit-tap-highlight-color:transparent;
+  }
+  header{display:flex;align-items:center;gap:14px;padding:18px 20px 8px;max-width:1000px;width:100%;margin:0 auto}
+  header img{width:46px;height:auto;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  header h1{margin:0;font-size:1.05rem;letter-spacing:.14em;color:var(--accent);font-weight:700}
+  header p{margin:3px 0 0;font-size:.8rem;color:var(--muted)}
+
+  nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;padding:10px 16px 18px}
+  .tab{background:transparent;color:var(--muted);border:1px solid rgba(247,239,225,.2);border-radius:999px;padding:9px 16px;font-size:.92rem;cursor:pointer}
+  .tab:hover{color:var(--cream);border-color:rgba(247,239,225,.45)}
+  .tab.on{background:var(--accent);color:#14083a;border-color:var(--accent);font-weight:600}
+
+  main{max-width:1000px;width:100%;margin:0 auto;padding:4px 16px 28px;flex:1}
+  .view{display:none}
+  .view.active{display:block}
+
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .intro{margin:0;color:var(--muted);font-size:.95rem;text-align:center}
+  .counter{margin:0;font-size:.88rem;color:var(--muted);text-align:center}
+
+  /* ----- carta que vira ----- */
+  .flip-wrap{position:relative;width:min(330px,78vw);aspect-ratio:810/1256;perspective:1400px;cursor:pointer;outline:none}
+  .flip-wrap:focus-visible{box-shadow:0 0 0 3px var(--accent);border-radius:14px}
+  .flip-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.3,.7,.2,1)}
+  .flip-wrap.revealed .flip-inner{transform:rotateY(180deg)}
+  .flip-wrap.wobble .flip-inner{animation:wobble .38s ease-in-out}
+  @keyframes wobble{
+    0%,100%{transform:rotateY(0) rotateZ(0)}
+    25%{transform:rotateY(-10deg) rotateZ(-1.5deg)}
+    75%{transform:rotateY(10deg) rotateZ(1.5deg)}
+  }
+  .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;overflow:hidden;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .face img{display:block;width:100%;height:100%;object-fit:contain}
+  .face.front{transform:rotateY(180deg)}
+  .flip-wrap.golden.revealed .face.front{box-shadow:0 0 0 3px #4fb3ff,0 0 40px rgba(79,179,255,.9)}
+
+  .burst{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;z-index:5}
+  .burst span{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;animation:sparkle 1.1s ease-out forwards}
+  @keyframes sparkle{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+  .bonus{
+    margin:0;max-width:340px;text-align:center;font-size:.95rem;line-height:1.45;
+    background:rgba(79,179,255,.12);border:1px solid rgba(79,179,255,.55);
+    border-radius:14px;padding:12px 16px;animation:rise .55s ease both;
+  }
+  .bonus strong{color:#4fb3ff}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  /* ----- canto para escrever ----- */
+  .notes{width:min(340px,86vw);display:flex;flex-direction:column;gap:6px;animation:rise .55s ease both}
+  .notes-title{margin:0;font-size:.92rem;color:var(--accent);font-weight:600}
+  .notes textarea{
+    width:100%;min-height:96px;resize:vertical;padding:10px 12px;
+    background:rgba(255,255,255,.06);color:var(--cream);
+    border:1px solid rgba(247,239,225,.25);border-radius:12px;
+    font:inherit;font-size:16px;line-height:1.4;
+  }
+  .notes textarea::placeholder{color:#8f7fa6}
+  .notes textarea:focus{outline:none;border-color:var(--accent)}
+  .saved{font-size:.78rem;color:var(--muted);min-height:1em}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{background:var(--accent);color:#14083a;border:1px solid var(--accent);border-radius:999px;padding:11px 20px;font-size:.98rem;font-weight:600;cursor:pointer}
+  .btn:hover{filter:brightness(1.06)}
+  .btn.ghost{background:transparent;color:var(--cream);border-color:rgba(247,239,225,.35);font-weight:500}
+  .btn.ghost.on{background:#dfe6ff;color:#14083a;border-color:#dfe6ff}
+
+  /* ----- grades ----- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:14px}
+  .thumb{position:relative;padding:0;border:0;border-radius:10px;overflow:hidden;background:none;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4);transition:transform .15s ease}
+  .thumb:hover,.thumb:focus-visible{transform:translateY(-3px)}
+  .thumb img{display:block;width:100%;height:auto}
+  .thumb .num{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:.7rem;padding:2px 7px;border-radius:999px}
+  .thumb .fav{position:absolute;top:6px;right:8px;color:var(--accent);font-size:1.05rem;text-shadow:0 1px 4px #000}
+  .empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:50px 10px;margin:0}
+
+  /* ----- ampliar ----- */
+  .modal{position:fixed;inset:0;z-index:50;background:rgba(10,4,18,.94);display:none;align-items:center;justify-content:center;padding:16px}
+  .modal.open{display:flex}
+  .mwrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .mwrap img{max-height:70vh;width:auto;max-width:92vw;border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.55)}
+  .close{position:absolute;top:14px;right:16px;background:transparent;border:0;color:var(--cream);font-size:1.4rem;cursor:pointer;padding:6px 10px}
+
+  footer{text-align:center;color:var(--muted);font-size:.78rem;line-height:1.5;padding:14px 16px 22px;max-width:620px;margin:0 auto}
+  footer #installBtn{margin-bottom:10px}
+
+  /* ----- tela de entrada ----- */
+  .intro-screen{
+    position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 38%,#4b2a78 0%,#25123f 48%,#130a1f 100%);
+    overflow:hidden;padding:24px;text-align:center;
+    transition:opacity .8s ease,visibility .8s ease;
+  }
+  .intro-screen.leave{opacity:0;visibility:hidden}
+  .stars{position:absolute;inset:0;pointer-events:none}
+  .star{
+    position:absolute;width:var(--s);height:var(--s);border-radius:50%;
+    background:#fff;box-shadow:0 0 6px 2px rgba(220,230,255,.75);
+    animation:twinkle var(--d) ease-in-out var(--t) infinite;opacity:.2;
+  }
+  .star.gold{background:#4fb3ff;box-shadow:0 0 8px 3px rgba(79,179,255,.9)}
+  .sparkle{
+    position:absolute;color:#cfd9ff;font-size:var(--s);line-height:1;
+    text-shadow:0 0 8px rgba(127,156,255,.95);
+    animation:twinkle var(--d) ease-in-out var(--t) infinite;opacity:.2;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:.15;transform:scale(.6)}
+    50%{opacity:1;transform:scale(1.25)}
+  }
+  .intro-inner{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;max-width:520px}
+  .logo-wrap{
+    position:relative;overflow:hidden;border-radius:50%;width:min(262px,66vw);aspect-ratio:1/1;
+    box-shadow:0 0 0 1px rgba(79,179,255,.45),0 0 44px rgba(79,179,255,.35);
+    animation:fadeIn 1s ease .2s both,halo 3.4s ease-in-out 1.2s infinite;
+  }
+  @keyframes fadeIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+  .logo-wrap img{display:block;width:100%;height:100%;object-fit:cover}
+  .logo-wrap::after{
+    content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+    transform:skewX(-18deg);animation:glint 4.2s ease-in-out 1s infinite;
+  }
+  @keyframes halo{
+    0%,100%{box-shadow:0 0 0 1px rgba(79,179,255,.45),0 0 30px rgba(79,179,255,.25)}
+    50%{box-shadow:0 0 0 1px rgba(79,179,255,.7),0 0 70px rgba(79,179,255,.6)}
+  }
+  @keyframes glint{
+    0%{left:-60%}
+    55%,100%{left:130%}
+  }
+  .welcome{
+    margin:0;font-size:clamp(1.35rem,5.2vw,2rem);line-height:1.25;color:var(--cream);
+    font-weight:500;letter-spacing:.02em;opacity:0;animation:rise .9s ease .5s forwards;
+  }
+  .welcome span{display:block;margin-top:6px;color:var(--accent);font-weight:700;letter-spacing:.06em;
+    text-shadow:0 0 18px rgba(127,156,255,.55)}
+  .intro-sub{margin:0;color:var(--muted);font-size:.95rem;line-height:1.5;opacity:0;animation:rise .9s ease .8s forwards}
+  .intro-btn{opacity:0;animation:rise .9s ease 1.1s forwards,pulse 2.6s ease-in-out 2.1s infinite;padding:14px 30px;font-size:1.05rem}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(127,156,255,.55)}
+    50%{box-shadow:0 0 0 12px rgba(127,156,255,0)}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .star,.sparkle,.logo-wrap,.logo-wrap::after,.intro-btn,.welcome,.intro-sub{animation:none !important;opacity:1}
+  }
+</style>
+</head>
+<body>
+
+<div class="intro-screen" id="intro" role="dialog" aria-modal="true" aria-label="Boas-vindas">
+  <div class="stars" id="stars"></div>
+  <div class="intro-inner">
+    <div class="logo-wrap"><img id="introLogo" alt="Logo IZZI VIBES"></div>
+    <h2 class="welcome">Bem-vindo ao seu mundo das
+      <span>Manifestações Positivas</span></h2>
+    <p class="intro-sub">Respire, escolha uma carta e deixe uma mensagem de luz para o seu dia.</p>
+    <button class="btn intro-btn" id="enterBtn">Entrar no baralho</button>
+  </div>
+</div>
+
+<header>
+  <img id="logo" alt="Capa do baralho IZZI VIBES">
+  <div>
+    <h1>IZZI VIBES</h1>
+    <p>Baralho de Afirmações Positivas · Edição 2026</p>
+  </div>
+</header>
+
+<nav>
+  <button class="tab on" data-view="sortear">Sortear</button>
+  <button class="tab" data-view="dia">Carta do dia</button>
+  <button class="tab" data-view="todas">Todas as cartas</button>
+  <button class="tab" data-view="favoritas">Favoritas</button>
+</nav>
+
+<main>
+  <section class="view active" id="v-sortear">
+    <div class="stage">
+      <p class="intro">Respire, escolha uma carta e toque nela para virar.</p>
+      <div id="drawSlot"></div>
+      <p class="counter" id="drawLabel"></p>
+      <div id="drawBonus" class="stage"></div>
+      <div id="drawNotes" class="stage"></div>
+      <div class="actions">
+        <button class="btn" id="drawNew">Sortear outra carta</button>
+        <button class="btn ghost" id="drawFav" hidden>☆ Favoritar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-dia">
+    <div class="stage">
+      <p class="intro">Uma afirmação para hoje. Toque na carta para revelar.</p>
+      <div id="diaSlot"></div>
+      <p class="counter" id="diaLabel"></p>
+      <div id="diaBonus" class="stage"></div>
+      <div id="diaNotes" class="stage"></div>
+      <div class="actions">
+        <button class="btn ghost" id="diaFav" hidden>☆ Favoritar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-todas"><div class="grid" id="grid-todas"></div></section>
+  <section class="view" id="v-favoritas"><div class="grid" id="grid-favoritas"></div></section>
+</main>
+
+<footer>
+  <button class="btn" id="installBtn" hidden>Instalar app no celular</button>
+  <p>Este app funciona sem internet. No iPhone, abra pelo Safari, toque em Compartilhar e depois em “Adicionar à Tela de Início”.</p>
+</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Carta ampliada">
+  <button class="close" id="mClose" aria-label="Fechar">✕</button>
+  <div class="mwrap">
+    <div id="mBox"></div>
+    <p class="counter" id="mLabel"></p>
+    <div class="actions">
+      <button class="btn ghost" id="mPrev">‹ Anterior</button>
+      <button class="btn ghost" id="mFav">☆ Favoritar</button>
+      <button class="btn ghost" id="mNext">Próxima ›</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const COVER = "img/capa.jpg";
+const FINAL = "img/fim.jpg";
+const LOGO = "img/logo-entrada.png";
+const CARDS = [
+ "img/carta-01.jpg",
+ "img/carta-02.jpg",
+ "img/carta-03.jpg",
+ "img/carta-04.jpg",
+ "img/carta-05.jpg",
+ "img/carta-06.jpg",
+ "img/carta-07.jpg",
+ "img/carta-08.jpg",
+ "img/carta-09.jpg",
+ "img/carta-10.jpg",
+ "img/carta-11.jpg",
+ "img/carta-12.jpg",
+ "img/carta-13.jpg",
+ "img/carta-14.jpg",
+ "img/carta-15.jpg",
+ "img/carta-16.jpg",
+ "img/carta-17.jpg",
+ "img/carta-18.jpg",
+ "img/carta-19.jpg",
+ "img/carta-20.jpg",
+ "img/carta-21.jpg",
+ "img/carta-22.jpg",
+ "img/carta-23.jpg",
+ "img/carta-24.jpg",
+ "img/carta-25.jpg",
+ "img/carta-26.jpg",
+ "img/carta-27.jpg",
+ "img/carta-28.jpg",
+ "img/carta-29.jpg",
+ "img/carta-30.jpg",
+ "img/carta-31.jpg",
+ "img/carta-32.jpg",
+ "img/carta-33.jpg",
+ "img/carta-34.jpg",
+ "img/carta-35.jpg",
+ "img/carta-36.jpg",
+ "img/carta-37.jpg",
+ "img/carta-38.jpg",
+ "img/carta-39.jpg",
+ "img/carta-40.jpg",
+ "img/carta-41.jpg",
+ "img/carta-42.jpg",
+ "img/carta-43.jpg",
+ "img/carta-44.jpg",
+ "img/carta-45.jpg",
+ "img/carta-46.jpg",
+ "img/carta-47.jpg",
+ "img/carta-48.jpg",
+ "img/carta-49.jpg",
+ "img/carta-50.jpg",
+ "img/carta-51.jpg",
+ "img/carta-52.jpg"
+];
+
+const DECK = CARDS.length;               // 52 cartas
+const ALL = [...CARDS, FINAL];           // cartas + mensagem final
+
+// Desafios que aparecem quando sai uma carta dourada (a surpresa)
+const BONUS = [
+  "diga esta afirmação em voz alta, olhando para o espelho.",
+  "escreva uma coisa pela qual você é grato(a) hoje.",
+  "mande uma mensagem de carinho para alguém que você ama.",
+  "respire fundo três vezes antes de continuar o seu dia.",
+  "lembre-se de uma pequena vitória sua e comemore.",
+  "faça um elogio sincero a você mesmo(a).",
+  "reserve cinco minutos só para você, sem telas.",
+  "deixe esta carta à vista hoje e releia quando passar por ela."
+];
+const PALETTE = ["#4fb3ff", "#e6ecff", "#c9a7ff", "#ffffff", "#865af6"];
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+
+function load(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; } catch (e) { return fallback; }
+}
+function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+
+let fav = new Set(load("izzi-favoritas", []));
+let notes = load("izzi-notas", {});
+let diaRevelada = load("izzi-dia-revelada", null);
+
+function todayNum() {
+  const t = new Date();
+  return Math.floor(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()) / 86400000);
+}
+
+function label(i) { return i < DECK ? `Carta ${i + 1} de ${DECK}` : "Mensagem final"; }
+
+function makeImg(i, cls) {
+  const img = document.createElement("img");
+  img.src = ALL[i];
+  img.alt = label(i);
+  img.loading = "lazy";
+  img.decoding = "async";
+  if (cls) img.className = cls;
+  return img;
+}
+
+function syncFavBtn(btn, i) {
+  const on = fav.has(i);
+  btn.textContent = on ? "★ Favoritada" : "☆ Favoritar";
+  btn.classList.toggle("on", on);
+}
+
+function toggleFav(i) {
+  if (fav.has(i)) fav.delete(i); else fav.add(i);
+  save("izzi-favoritas", [...fav]);
+  refresh();
+}
+
+/* ---------- a carta que vira ---------- */
+function buildCard(i, golden) {
+  const wrap = document.createElement("div");
+  wrap.className = "flip-wrap";
+  wrap.setAttribute("role", "button");
+  wrap.setAttribute("aria-label", "Toque para virar a carta");
+  wrap.tabIndex = 0;
+
+  const inner = document.createElement("div");
+  inner.className = "flip-inner";
+
+  const back = document.createElement("div");
+  back.className = "face back";
+  const cover = document.createElement("img");
+  cover.src = COVER;
+  cover.alt = "Verso da carta";
+  back.appendChild(cover);
+
+  const front = document.createElement("div");
+  front.className = "face front";
+  front.appendChild(makeImg(i));
+
+  inner.append(back, front);
+  wrap.appendChild(inner);
+  if (golden) wrap.dataset.golden = "1";
+  return wrap;
+}
+
+function burst(wrap, big) {
+  const box = document.createElement("div");
+  box.className = "burst";
+  const n = big ? 42 : 24;
+  for (let k = 0; k < n; k++) {
+    const s = document.createElement("span");
+    const a = Math.random() * Math.PI * 2;
+    const d = (big ? 90 : 60) + Math.random() * (big ? 170 : 110);
+    s.style.setProperty("--dx", Math.cos(a) * d + "px");
+    s.style.setProperty("--dy", Math.sin(a) * d + "px");
+    s.style.animationDelay = Math.random() * 150 + "ms";
+    s.style.background = PALETTE[k % PALETTE.length];
+    if (k % 3 === 0) { s.style.width = "12px"; s.style.height = "12px"; }
+    box.appendChild(s);
+  }
+  wrap.appendChild(box);
+  setTimeout(() => box.remove(), 1700);
+}
+
+function notesBlock(i) {
+  const box = document.createElement("div");
+  box.className = "notes";
+  const title = document.createElement("p");
+  title.className = "notes-title";
+  title.textContent = "Seu canto para escrever";
+  const ta = document.createElement("textarea");
+  ta.maxLength = 600;
+  ta.placeholder = "O que esta carta despertou em você hoje?";
+  ta.setAttribute("aria-label", "Escreva sobre esta carta");
+  ta.value = notes[i] || "";
+  const saved = document.createElement("span");
+  saved.className = "saved";
+  let t;
+  ta.addEventListener("input", () => {
+    if (ta.value.trim()) notes[i] = ta.value; else delete notes[i];
+    save("izzi-notas", notes);
+    saved.textContent = "Salvo ✓";
+    clearTimeout(t);
+    t = setTimeout(() => (saved.textContent = ""), 1500);
+  });
+  box.append(title, ta, saved);
+  return box;
+}
+
+function bonusBlock(idx) {
+  const p = document.createElement("p");
+  p.className = "bonus";
+  const strong = document.createElement("strong");
+  strong.textContent = "✨ Carta encantada! ";
+  p.append(strong, document.createTextNode("Seu desafio: " + BONUS[idx]));
+  return p;
+}
+
+const slots = {
+  draw: { slot: "#drawSlot", label: "#drawLabel", bonus: "#drawBonus", notes: "#drawNotes", fav: "#drawFav" },
+  dia:  { slot: "#diaSlot",  label: "#diaLabel",  bonus: "#diaBonus",  notes: "#diaNotes",  fav: "#diaFav" }
+};
+const cur = {};
+
+function showRevealed(s, wrap, i, golden, bonusIdx) {
+  wrap.classList.add("revealed");
+  if (golden) {
+    wrap.classList.add("golden");
+    $(s.bonus).replaceChildren(bonusBlock(bonusIdx));
+  }
+  $(s.label).textContent = label(i);
+  $(s.notes).replaceChildren(notesBlock(i));
+  $(s.fav).hidden = false;
+  syncFavBtn($(s.fav), i);
+}
+
+function mount(key, i, golden, bonusIdx, alreadyRevealed) {
+  const s = slots[key];
+  cur[key] = i;
+  const wrap = buildCard(i, golden);
+  $(s.slot).replaceChildren(wrap);
+  $(s.bonus).replaceChildren();
+  $(s.notes).replaceChildren();
+  $(s.fav).hidden = true;
+  $(s.label).textContent = "Toque na carta para virar";
+
+  if (alreadyRevealed) {
+    showRevealed(s, wrap, i, golden, bonusIdx);
+    return;
+  }
+
+  const reveal = () => {
+    if (wrap.classList.contains("wobble") || wrap.classList.contains("revealed")) return;
+    wrap.classList.add("wobble");                      // pequeno tremor antes de abrir
+    setTimeout(() => {
+      wrap.classList.remove("wobble");
+      showRevealed(s, wrap, i, golden, bonusIdx);
+      burst(wrap, golden);                              // brilho da surpresa
+      if (navigator.vibrate) navigator.vibrate(golden ? [30, 60, 30] : 25);
+      if (key === "dia") { diaRevelada = String(todayNum()); save("izzi-dia-revelada", diaRevelada); }
+    }, 380);
+  };
+  wrap.addEventListener("click", reveal);
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); reveal(); }
+  });
+}
+
+function drawNew() {
+  let n = Math.floor(Math.random() * DECK);
+  if (DECK > 1 && n === cur.draw) n = (n + 1) % DECK;   // evita repetir a carta anterior
+  const golden = Math.random() < 0.25;                  // 1 em cada 4 cartas é dourada
+  const bonusIdx = Math.floor(Math.random() * BONUS.length);
+  mount("draw", n, golden, bonusIdx, false);
+}
+
+function renderDaily() {
+  const dn = todayNum();
+  const i = dn % DECK;
+  const golden = dn % 4 === 0;                          // carta do dia dourada em alguns dias
+  const bonusIdx = dn % BONUS.length;
+  mount("dia", i, golden, bonusIdx, diaRevelada === String(dn));
+}
+
+/* ---------- grades e ampliar ---------- */
+let view = "sortear";
+
+function renderGrid(name) {
+  const grid = $("#grid-" + name);
+  grid.replaceChildren();
+  const list = name === "todas"
+    ? ALL.map((_, i) => i)
+    : [...fav].filter((i) => i < ALL.length).sort((a, b) => a - b);
+
+  if (!list.length) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = "Você ainda não favoritou nenhuma carta. Toque em ☆ para salvar as suas.";
+    grid.appendChild(p);
+    return;
+  }
+
+  list.forEach((i) => {
+    const b = document.createElement("button");
+    b.className = "thumb";
+    b.setAttribute("aria-label", label(i));
+    b.appendChild(makeImg(i));
+    const num = document.createElement("span");
+    num.className = "num";
+    num.textContent = i < DECK ? i + 1 : "Final";
+    b.appendChild(num);
+    if (fav.has(i)) {
+      const s = document.createElement("span");
+      s.className = "fav";
+      s.textContent = "★";
+      b.appendChild(s);
+    }
+    b.addEventListener("click", () => openModal(list, list.indexOf(i)));
+    grid.appendChild(b);
+  });
+}
+
+function go(name) {
+  view = name;
+  $$(".view").forEach((v) => v.classList.toggle("active", v.id === "v-" + name));
+  $$(".tab").forEach((b) => b.classList.toggle("on", b.dataset.view === name));
+  if (name === "todas" || name === "favoritas") renderGrid(name);
+  if (name === "dia" && !$("#diaSlot").firstChild) renderDaily();
+}
+
+let ctx = [];
+let pos = 0;
+const modal = $("#modal");
+
+function openModal(list, p) {
+  ctx = list;
+  pos = p;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  renderModal();
+  $("#mClose").focus();
+}
+
+function closeModal() {
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function step(d) {
+  if (!ctx.length) return;
+  pos = (pos + d + ctx.length) % ctx.length;
+  renderModal();
+}
+
+function renderModal() {
+  const i = ctx[pos];
+  $("#mBox").replaceChildren(makeImg(i));
+  $("#mLabel").textContent = `${label(i)} · ${pos + 1}/${ctx.length}`;
+  syncFavBtn($("#mFav"), i);
+}
+
+function refresh() {
+  for (const k in slots) {
+    const s = slots[k];
+    if (!$(s.fav).hidden && cur[k] !== undefined) syncFavBtn($(s.fav), cur[k]);
+  }
+  if (modal.classList.contains("open")) syncFavBtn($("#mFav"), ctx[pos]);
+  if (view === "todas" || view === "favoritas") renderGrid(view);
+}
+
+/* ---------- instalação (Android/Chrome) ---------- */
+let deferredPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  $("#installBtn").hidden = false;
+});
+$("#installBtn").addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  $("#installBtn").hidden = true;
+});
+window.addEventListener("appinstalled", () => { $("#installBtn").hidden = true; });
+
+/* ---------- eventos ---------- */
+$("#logo").src = COVER;
+$$(".tab").forEach((b) => b.addEventListener("click", () => go(b.dataset.view)));
+$("#drawNew").addEventListener("click", drawNew);
+$("#drawFav").addEventListener("click", () => toggleFav(cur.draw));
+$("#diaFav").addEventListener("click", () => toggleFav(cur.dia));
+
+$("#mPrev").addEventListener("click", () => step(-1));
+$("#mNext").addEventListener("click", () => step(1));
+$("#mFav").addEventListener("click", () => toggleFav(ctx[pos]));
+$("#mClose").addEventListener("click", closeModal);
+modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+document.addEventListener("keydown", (e) => {
+  if (!modal.classList.contains("open")) return;
+  if (e.key === "Escape") closeModal();
+  else if (e.key === "ArrowLeft") step(-1);
+  else if (e.key === "ArrowRight") step(1);
+});
+
+let touchX = null;
+modal.addEventListener("touchstart", (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+modal.addEventListener("touchend", (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+
+/* ---------- tela de entrada ---------- */
+(function () {
+  const box = $("#stars");
+  for (let k = 0; k < 90; k++) {
+    const isSparkle = k % 9 === 0;
+    const el = document.createElement("span");
+    el.style.left = (Math.random() * 100) + "%";
+    el.style.top = (Math.random() * 100) + "%";
+    el.style.setProperty("--d", (2 + Math.random() * 3).toFixed(2) + "s");
+    el.style.setProperty("--t", (-Math.random() * 5).toFixed(2) + "s");
+    if (isSparkle) {
+      el.className = "sparkle";
+      el.textContent = "✦";
+      el.style.setProperty("--s", (10 + Math.random() * 12).toFixed(0) + "px");
+    } else {
+      el.className = "star" + (k % 3 === 0 ? " gold" : "");
+      el.style.setProperty("--s", (1.5 + Math.random() * 2.5).toFixed(1) + "px");
+    }
+    box.appendChild(el);
+  }
+  $("#introLogo").src = LOGO;
+  const intro = $("#intro");
+  const enter = () => {
+    intro.classList.add("leave");
+    setTimeout(() => { intro.hidden = true; }, 800);
+  };
+  $("#enterBtn").addEventListener("click", enter);
+  setTimeout(() => $("#enterBtn").focus({ preventScroll: true }), 300);
+})();
+
+drawNew();
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
+</script>
+</body>
+</html>
