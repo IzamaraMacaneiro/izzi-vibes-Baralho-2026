@@ -94,6 +94,18 @@
   .thumb img{display:block;width:100%;height:auto}
   .thumb .num{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.65);color:#fff;font-size:.7rem;padding:2px 7px;border-radius:999px}
   .thumb .fav{position:absolute;top:6px;right:8px;color:var(--accent);font-size:1.05rem;text-shadow:0 1px 4px #000}
+  .thumb.locked{cursor:default}
+  .thumb.locked:hover{transform:none}
+  .thumb:disabled{cursor:default}
+  .fav-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
+  .fav-item{display:flex;flex-direction:column;gap:10px}
+  .fav-item textarea{
+    width:100%;min-height:96px;resize:vertical;padding:10px 12px;
+    background:rgba(255,255,255,.06);color:var(--cream);
+    border:1px solid rgba(247,239,225,.25);border-radius:12px;font:inherit;font-size:16px;
+  }
+  .fav-item textarea::placeholder{color:#8f7fa6}
+  .fav-item textarea:focus{outline:none;border-color:var(--accent)}
   .empty{grid-column:1/-1;color:var(--muted);text-align:center;padding:50px 10px;margin:0}
 
   /* ----- ampliar ----- */
@@ -199,7 +211,8 @@
 <main>
   <section class="view active" id="v-sortear">
     <div class="stage">
-      <p class="intro">Respire, escolha uma carta e toque nela para virar.</p>
+      <p class="intro">Respire, escolha uma carta e toque nela para virar. Depois, sorteie a próxima.</p>
+      <p class="counter" id="progress"></p>
       <div id="drawSlot"></div>
       <p class="counter" id="drawLabel"></p>
       <div id="drawBonus" class="stage"></div>
@@ -224,8 +237,14 @@
     </div>
   </section>
 
-  <section class="view" id="v-todas"><div class="grid" id="grid-todas"></div></section>
-  <section class="view" id="v-favoritas"><div class="grid" id="grid-favoritas"></div></section>
+  <section class="view" id="v-todas">
+    <p class="intro" id="todasInfo"></p>
+    <div class="grid" id="grid-todas"></div>
+  </section>
+  <section class="view" id="v-favoritas">
+    <p class="intro">Suas cartas favoritas, com a sua mensagem para cada uma.</p>
+    <div class="grid fav-grid" id="grid-favoritas"></div>
+  </section>
 </main>
 
 <footer>
@@ -332,6 +351,41 @@ function save(key, value) { try { localStorage.setItem(key, JSON.stringify(value
 let fav = new Set(load("izzi-favoritas", []));
 let notes = load("izzi-notas", {});
 let diaRevelada = load("izzi-dia-revelada", null);
+
+// ordem embaralhada do baralho (fixa neste aparelho) e cartas já reveladas
+let ordem = load("izzi-ordem", null);
+if (!Array.isArray(ordem) || ordem.length !== DECK) {
+  ordem = [...Array(DECK).keys()];
+  for (let k = ordem.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [ordem[k], ordem[j]] = [ordem[j], ordem[k]];
+  }
+  save("izzi-ordem", ordem);
+}
+let vistas = new Set(load("izzi-vistas", []));
+
+function markSeen(i) {
+  vistas.add(i);
+  save("izzi-vistas", [...vistas]);
+  updateProgress();
+}
+
+function deckComplete() {
+  for (let i = 0; i < DECK; i++) if (!vistas.has(i)) return false;
+  return true;
+}
+
+function updateProgress() {
+  const n = [...vistas].filter((x) => x < DECK).length;
+  const p = $("#progress");
+  if (p) p.textContent = `Cartas reveladas: ${n} de ${DECK}`;
+  const info = $("#todasInfo");
+  if (info) {
+    info.textContent = deckComplete()
+      ? "Você terminou o baralho! Todas as cartas estão liberadas."
+      : `Vire as cartas no Sortear. Cada carta aparece aqui depois de revelada. Faltam ${DECK - n} para liberar todas.`;
+  }
+}
 
 function todayNum() {
   const t = new Date();
@@ -484,6 +538,7 @@ function mount(key, i, golden, bonusIdx, alreadyRevealed) {
       showRevealed(s, wrap, i, golden, bonusIdx);
       burst(wrap, golden);                              // brilho da surpresa
       if (navigator.vibrate) navigator.vibrate(golden ? [30, 60, 30] : 25);
+      markSeen(i);
       if (key === "dia") { diaRevelada = String(todayNum()); save("izzi-dia-revelada", diaRevelada); }
     }, 380);
   };
@@ -494,8 +549,13 @@ function mount(key, i, golden, bonusIdx, alreadyRevealed) {
 }
 
 function drawNew() {
-  let n = Math.floor(Math.random() * DECK);
-  if (DECK > 1 && n === cur.draw) n = (n + 1) % DECK;   // evita repetir a carta anterior
+  // só sorteia a próxima depois de virar a carta atual
+  if (cur.draw !== undefined && cur.draw < DECK && !vistas.has(cur.draw)) return;
+  if (deckComplete()) {
+    mount("draw", DECK, false, 0, vistas.has(DECK));   // mensagem final
+    return;
+  }
+  const n = ordem.find((i) => !vistas.has(i));
   const golden = Math.random() < 0.25;                  // 1 em cada 4 cartas é dourada
   const bonusIdx = Math.floor(Math.random() * BONUS.length);
   mount("draw", n, golden, bonusIdx, false);
@@ -512,13 +572,61 @@ function renderDaily() {
 /* ---------- grades e ampliar ---------- */
 let view = "sortear";
 
+function coverImg() {
+  const img = document.createElement("img");
+  img.src = COVER;
+  img.alt = "Carta virada, ainda não revelada";
+  img.loading = "lazy";
+  img.decoding = "async";
+  return img;
+}
+
+function noteArea(i) {
+  const ta = document.createElement("textarea");
+  ta.maxLength = 600;
+  ta.placeholder = "Escreva a sua mensagem para esta carta…";
+  ta.setAttribute("aria-label", "Mensagem da " + label(i));
+  ta.value = notes[i] || "";
+  ta.addEventListener("input", () => {
+    if (ta.value.trim()) notes[i] = ta.value; else delete notes[i];
+    save("izzi-notas", notes);
+  });
+  return ta;
+}
+
 function renderGrid(name) {
   const grid = $("#grid-" + name);
   grid.replaceChildren();
-  const list = name === "todas"
-    ? ALL.map((_, i) => i)
-    : [...fav].filter((i) => i < ALL.length).sort((a, b) => a - b);
 
+  if (name === "todas") {
+    updateProgress();
+    const done = deckComplete();
+    const visiveis = ALL.map((_, i) => i).filter((i) => done || vistas.has(i));
+    ALL.forEach((_, i) => {
+      const visivel = done || vistas.has(i);
+      const b = document.createElement("button");
+      b.className = "thumb" + (visivel ? "" : " locked");
+      b.setAttribute("aria-label", visivel ? label(i) : "Carta ainda não revelada");
+      b.appendChild(visivel ? makeImg(i) : coverImg());
+      const num = document.createElement("span");
+      num.className = "num";
+      num.textContent = visivel ? (i < DECK ? i + 1 : "Final") : "?";
+      b.appendChild(num);
+      if (visivel && fav.has(i)) {
+        const s = document.createElement("span");
+        s.className = "fav";
+        s.textContent = "★";
+        b.appendChild(s);
+      }
+      if (visivel) b.addEventListener("click", () => openModal(visiveis, visiveis.indexOf(i)));
+      else b.disabled = true;
+      grid.appendChild(b);
+    });
+    return;
+  }
+
+  // favoritas: carta + a mensagem escrita para ela
+  const list = [...fav].filter((i) => i < ALL.length).sort((a, b) => a - b);
   if (!list.length) {
     const p = document.createElement("p");
     p.className = "empty";
@@ -526,8 +634,9 @@ function renderGrid(name) {
     grid.appendChild(p);
     return;
   }
-
   list.forEach((i) => {
+    const item = document.createElement("div");
+    item.className = "fav-item";
     const b = document.createElement("button");
     b.className = "thumb";
     b.setAttribute("aria-label", label(i));
@@ -536,14 +645,13 @@ function renderGrid(name) {
     num.className = "num";
     num.textContent = i < DECK ? i + 1 : "Final";
     b.appendChild(num);
-    if (fav.has(i)) {
-      const s = document.createElement("span");
-      s.className = "fav";
-      s.textContent = "★";
-      b.appendChild(s);
-    }
+    const star = document.createElement("span");
+    star.className = "fav";
+    star.textContent = "★";
+    b.appendChild(star);
     b.addEventListener("click", () => openModal(list, list.indexOf(i)));
-    grid.appendChild(b);
+    item.append(b, noteArea(i));
+    grid.appendChild(item);
   });
 }
 
@@ -671,6 +779,7 @@ modal.addEventListener("touchend", (e) => {
   setTimeout(() => $("#enterBtn").focus({ preventScroll: true }), 300);
 })();
 
+updateProgress();
 drawNew();
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(function () {}); }
 </script>

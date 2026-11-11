@@ -1,4 +1,4 @@
-const CACHE = 'izzi-vibes-v7';
+const CACHE = 'izzi-vibes-v8';
 const FILES = [
  "./",
  "./index.html",
